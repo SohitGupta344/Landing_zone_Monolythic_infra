@@ -130,7 +130,7 @@ stages:
 
         script: |
 
-          Set-Location "$(workingDirectory1)"
+          Set-Location "$(workingDirectory)"
 
           tflint --init
 
