@@ -32,10 +32,13 @@ stages:
             script: |
               Set-Location "$(Build.SourcesDirectory)\env\dev"
               
-              Tflint
+              tflint --format json > tflint-report.json
               
-              (Get-Content .\tflint-report.json | ConvertFrom-Json).issues |
-              >> Select-Object message,@{N="File";E={$_.range.filename}},@{N="Line";E={$_.range.start.line}}
+              Get-Content tflint-report.json |
+              ConvertFrom-Json |
+              Select-Object message,
+              @{Name="File";Expression={$_.range.filename}},
+              @{Name="Line";Expression={$_.range.start.line}}
 
       - job: tfsec_Scan
         displayName: tfsec_Scan
