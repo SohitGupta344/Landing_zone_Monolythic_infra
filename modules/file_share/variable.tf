@@ -4,7 +4,7 @@ variable "file_shares" {
 
     name = string
 
-    storage_account_name = string
+    storage_account_id = string
 
     quota = number
 

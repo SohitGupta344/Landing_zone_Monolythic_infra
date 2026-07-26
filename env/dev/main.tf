@@ -1,3 +1,7 @@
+locals {
+  rg_name  = module.resource_group.rg_names["rg1"]
+  location = module.resource_group.rg_locations["rg1"]
+}
 module "resource_group" {
 
   source = "../../modules/resource_group"
@@ -123,9 +127,9 @@ module "virtual_machine" {
 
       nic_name = "linux-vm1-nic"
 
-      location = "Central India"
+      location = local.location
 
-      rg_name = "mohit-rg"
+      rg_name = local.rg_name
 
       subnet_id = module.subnet.subnet_ids["frontend_subnet"]
 
@@ -145,9 +149,9 @@ module "virtual_machine" {
 
       nic_name = "linux-vm2-nic"
 
-      location = "Central India"
+      location = local.location
 
-      rg_name = "mohit-rg"
+      rg_name = local.rg_name
 
       subnet_id = module.subnet.subnet_ids["backend_subnet"]
 
@@ -170,6 +174,7 @@ module "virtual_machine" {
     module.subnet,
     module.nsg_rule,
     module.virtual_network
+    , module.subnet_route_association
   ]
 
 }
@@ -183,9 +188,9 @@ module "bastion" {
 
       name = "sohit-bastion"
 
-      location = "Central India"
+      location = local.location
 
-      rg_name = "mohit-rg"
+      rg_name = local.rg_name
 
       subnet_id = module.subnet.subnet_ids["bastion_subnet"]
 
@@ -214,9 +219,9 @@ module "vnet_peering" {
 
       name = "frontend-to-backend"
 
-      resource_group_name = "mohit-rg"
+      resource_group_name = local.rg_name
 
-      virtual_network_name = "frontend-vnet"
+      virtual_network_name = var.vnets["vnet1"].name
 
       remote_virtual_network_id = module.virtual_network.vnet_ids["vnet2"]
 
@@ -226,9 +231,9 @@ module "vnet_peering" {
 
       name = "backend-to-frontend"
 
-      resource_group_name = "mohit-rg"
+      resource_group_name = local.rg_name
 
-      virtual_network_name = "backend-vnet"
+      virtual_network_name = var.vnets["vnet2"].name
 
       remote_virtual_network_id = module.virtual_network.vnet_ids["vnet1"]
 
@@ -260,12 +265,16 @@ module "storage_container" {
 
   source = "../../modules/storage_container"
 
-  storage_containers = var.storage_containers
+  storage_containers = {
+    for k, v in var.storage_containers :
+    k => merge(v, {
+      storage_account_id = module.storage_account.storage_account_ids["sa1"]
+    })
+  }
 
   depends_on = [
-
-    module.storage_account, module.resource_group
-
+    module.storage_account,
+    module.resource_group
   ]
 
 }
@@ -279,13 +288,13 @@ module "file_share" {
     k => merge(
       v,
       {
-        storage_account_name = module.storage_account.storage_account_names["sa1"]
+        storage_account_id = module.storage_account.storage_account_ids["sa1"]
       }
     )
   }
 
   depends_on = [
-    module.storage_account
+    module.storage_account, module.storage_container, module.resource_group
   ]
 }
 
@@ -397,9 +406,9 @@ module "sql_server" {
 
       name = "sohitsqlserver001"
 
-      location = "Central India"
+      location = local.location
 
-      resource_group_name = "mohit-rg"
+      resource_group_name = local.rg_name
 
       version = "12.0"
 
@@ -417,7 +426,7 @@ module "sql_server" {
 
   depends_on = [
 
-    module.key_vault_secret, module.resource_group
+    module.key_vault_secret, module.storage_account
 
   ]
 
@@ -504,9 +513,7 @@ module "subnet_route_association" {
 
   depends_on = [
 
-    module.route_table,
-
-    module.subnet, module.resource_group, module.virtual_network
+    module.subnet_nsg_association, module.route_table, module.subnet
 
   ]
 
@@ -518,7 +525,7 @@ module "private_dns_zone" {
 
   private_dns_zones = var.private_dns_zones
 
-  depends_on = [ module.resource_group ]
+  depends_on = [module.resource_group]
 
 }
 
@@ -574,9 +581,9 @@ module "private_endpoint" {
 
       name = "storage-pe"
 
-      location = "Central India"
+      location = local.location
 
-      resource_group_name = "mohit-rg"
+      resource_group_name = local.rg_name
 
       subnet_id = module.subnet.subnet_ids["frontend_subnet"]
 
@@ -594,9 +601,9 @@ module "private_endpoint" {
 
       name = "sql-pe"
 
-      location = "Central India"
+      location = local.location
 
-      resource_group_name = "mohit-rg"
+      resource_group_name = local.rg_name
 
       subnet_id = module.subnet.subnet_ids["backend_subnet"]
 
@@ -613,12 +620,11 @@ module "private_endpoint" {
   }
 
   depends_on = [
-  module.storage_account,
-  module.sql_server,
-  module.private_dns_zone,
-  module.subnet,
-  module.resource_group
-]
+    module.storage_account,
+    module.sql_server,
+    module.private_dns_zone,
+    module.private_dns_zone_link,
+  ]
 
 }
 
@@ -632,9 +638,10 @@ module "load_balancer" {
 
       name = var.load_balancers["lb1"].name
 
-      location = var.load_balancers["lb1"].location
+      location = local.location
 
-      resource_group_name = var.load_balancers["lb1"].resource_group_name
+
+      resource_group_name = local.rg_name
 
       sku = var.load_balancers["lb1"].sku
 
