@@ -17,7 +17,9 @@ stages:
             targetType: 'inline'
             script: |
               cd dev/dev
+              
               gitleaks dir .
+              
               gitleaks dir . --report-format json --report-path gitleaks-report.json
 
       - job: tflint_Scan
@@ -29,7 +31,9 @@ stages:
             targetType: 'inline'
             script: |
               cd dev/dev
+              
               Tflint
+              
               (Get-Content .\tflint-report.json | ConvertFrom-Json).issues |
               >> Select-Object message,@{N="File";E={$_.range.filename}},@{N="Line";E={$_.range.start.line}}
 
@@ -42,7 +46,9 @@ stages:
             targetType: 'inline'
             script: |
               cd dev/dev
+              
               tfsec .
+              
               tfsec . --format json --out tfsec-report
 
       - job: infracst_Scan
@@ -54,7 +60,9 @@ stages:
             targetType: 'inline'
             script: |
               cd dev/dev
+              
               infracost breakdown --path .
+              
               (Get-Content .\infracost.json -Raw | ConvertFrom-Json).projects.breakdown.resources |
               Select-Object name, hourlyCost, monthlyCost |
               ConvertTo-Json -Depth 5 |
@@ -71,9 +79,13 @@ stages:
             targetType: 'inline'
             script: |
               cd env/dev
+              
               terraform init
+              
               terraform fmt
+              
               terraform validate
+              
               terraform plan
   - stage: Manual_Approval
     dependsOn: Terraform_plan
