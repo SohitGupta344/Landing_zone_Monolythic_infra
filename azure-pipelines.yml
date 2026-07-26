@@ -1,17 +1,156 @@
 trigger:
 - main
 
-pool: default
+pool:
+  name: Default
 
 stages:
-  - stage: 
-    jobs:
-      - job: Scanning
-        steps:
-        - task: PowerShell@2
-          inputs:
-            targetType: 'inline'
-            script: |
-              # Write your PowerShell commands here.
-              
-              Write-Host "Hello World"
+
+- stage: Terraform_Plan
+  displayName: "Terraform Plan"
+
+  jobs:
+
+  - job: Validation
+    displayName: "Terraform Validation"
+
+    steps:
+
+    - checkout: self
+
+    - task: PowerShell@2
+      displayName: Terraform Init, FMT, Validate, Plan
+      inputs:
+        targetType: inline
+        script: |
+
+          Set-Location "$(Build.SourcesDirectory)\env\dev"
+
+          terraform init
+
+          terraform fmt -recursive
+
+          terraform validate
+
+          terraform plan -out=tfplan
+- stage: Scanning
+  displayName: "Scanning"
+  jobs:
+  - job: Scanning
+    displayName: "Scanning"
+
+    steps:
+
+    - checkout: self
+
+    - task: PowerShell@2
+      displayName: "Gitleaks Scan"
+      inputs:
+        targetType: inline
+        script: |
+
+          Set-Location "$(Build.SourcesDirectory)\env\dev"
+
+          gitleaks dir .
+
+          gitleaks dir . --report-format json --report-path gitleaks-report.json
+
+    - task: PowerShell@2
+      displayName: TFLint_Scan
+      inputs:
+        targetType: inline
+        script: |
+
+          Set-Location "$(Build.SourcesDirectory)\env\dev"
+
+          tflint --init
+          tflint
+          tflint --format compact > tflint.txt
+          tflint --recursive --format json > tflint-report.json
+
+    - task: PowerShell@2
+      displayName: tfsec Scan
+      inputs:
+        targetType: inline
+        script: |
+
+          Set-Location "$(Build.SourcesDirectory)\env\dev"
+
+          tfsec .
+          tfsec . --format json --out tfsec-report.json
+
+    - task: PowerShell@2
+      displayName: Infra_cost
+      inputs:
+        targetType: inline
+        script: |
+
+          Set-Location "$(Build.SourcesDirectory)\env\dev"
+
+          infracost breakdown --path .
+          infracost breakdown --path . --format json --out-file infracost.json
+
+
+
+#==========================
+# Manual Approval
+#==========================
+
+- stage: Manual_Approval
+  dependsOn: Terraform_Plan
+
+  jobs:
+
+  - job: Approval
+
+    pool: server
+
+    steps:
+
+    - task: ManualValidation@1
+      timeoutInMinutes: 1440
+
+      inputs:
+
+        notifyUsers: |
+          sohitg89@gmail.com
+
+        approvers: |
+          sohitg89@gmail.com
+
+        instructions: |
+          Please verify Terraform Plan before Apply.
+
+        onTimeout: reject
+
+
+
+#==========================
+# Terraform Apply
+#==========================
+
+- stage: Terraform_Apply
+
+  dependsOn: Manual_Approval
+
+  jobs:
+
+  - job: Apply
+
+    steps:
+
+    - checkout: self
+
+    - task: PowerShell@2
+      displayName: Terraform Apply
+
+      inputs:
+        targetType: inline
+        
+        script: |
+
+          Set-Location "$(Build.SourcesDirectory)\env\dev"
+
+          terraform init
+
+          terraform apply -auto-approve
