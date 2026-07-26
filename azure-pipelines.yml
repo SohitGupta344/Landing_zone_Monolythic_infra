@@ -40,16 +40,27 @@ stages:
         outputTo: 'console'
         customCommand: 'fmt'
         environmentServiceNameAzureRM: 'ericsson'
-  - job: tfsec
+  - job: gitleaks
     dependsOn: TerraformFmt
-    displayName: TfSec Scan
+    displayName: gitleaks
     steps:
-    - task: tfsec@1
+    - task: PowerShell@2
       inputs:
-        version: 'v1.26.0'
-        dir: '$(System.DefaultWorkingDirectory)/env/dev'
+        targetType: 'inline'
+        script: |
+          Set-Location "$(Build.SourcesDirectory)\env\dev"
+          
+          gitleaks dir .
+          
+          gitleaks dir . --report-format json --report-path gitleaks-report.json
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'gitleaks-report.json'
+        publishLocation: 'Container'
+    
   - job: tflint
-    dependsOn: tfsec
+    dependsOn: gitleaks
     displayName: TFLint
     steps:
     - task: PowerShell@2
@@ -62,8 +73,36 @@ stages:
           tflint
           
           tflint --format compact > tflint.txt
-        errorActionPreference: 'continue'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/env/dev'
+
+    - task: PublishBuildArtifacts@1
+      displayName: tflint
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'tflint.txt'
+        publishLocation: 'Container'
+
+  - job: tfsec
+    dependsOn: tflint
+    displayName: tfsec
+    steps:
+    - task: PowerShell@2
+      continueOnError: true
+      inputs:
+        targetType: 'inline'
+        script: |
+          Set-Location "$(Build.SourcesDirectory)\env\dev"
+          
+          tfsec .
+          
+          tfsec . --format json --out tfsec-report
+
+    - task: PublishBuildArtifacts@1
+      displayName: tfsec
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'tfsec-report'
+        publishLocation: 'Container'
+
 
 - stage: Infra_Cost
   dependsOn: PreCommit
@@ -79,6 +118,13 @@ stages:
             infracost breakdown --path .
             
             infracost breakdown --path . --format json --out-file infracost.json
+
+      - task: PublishBuildArtifacts@1
+        displayName: infracost
+        inputs:
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+          ArtifactName: 'infracost.json'
+          publishLocation: 'Container'
 
 - stage: plan
   displayName: Plan & Review Stage
