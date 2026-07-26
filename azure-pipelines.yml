@@ -12,6 +12,5 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              # Write your PowerShell commands here.
-              
-              Write-Host "Hello World"
+              cd  cd C:\agent\_work
+              cd env/dev
