@@ -274,14 +274,19 @@ module "file_share" {
 
   source = "../../modules/file_share"
 
-  file_shares = var.file_shares
+  file_shares = {
+    for k, v in var.file_shares :
+    k => merge(
+      v,
+      {
+        storage_account_name = module.storage_account.storage_account_names["sa1"]
+      }
+    )
+  }
 
   depends_on = [
-
-    module.storage_account, module.resource_group
-
+    module.storage_account
   ]
-
 }
 
 # data "azurerm_client_config" "current" {}
