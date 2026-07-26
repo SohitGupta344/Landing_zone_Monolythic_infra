@@ -16,7 +16,7 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              cd dev/dev
+              Set-Location "$(Build.SourcesDirectory)\env\dev"
               
               gitleaks dir .
               
@@ -30,7 +30,7 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              cd dev/dev
+              Set-Location "$(Build.SourcesDirectory)\env\dev"
               
               Tflint
               
@@ -45,7 +45,7 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              cd dev/dev
+              Set-Location "$(Build.SourcesDirectory)\env\dev"
               
               tfsec .
               
@@ -59,7 +59,7 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              cd dev/dev
+              Set-Location "$(Build.SourcesDirectory)\env\dev"
               
               infracost breakdown --path .
               
@@ -78,7 +78,7 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              cd env/dev
+              Set-Location "$(Build.SourcesDirectory)\env\dev"
               
               terraform init
               
@@ -106,7 +106,8 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              cd env/dev
+              Set-Location "$(Build.SourcesDirectory)\env\dev"
+              
               terraform init
               terraform apply -auto-approve
         
