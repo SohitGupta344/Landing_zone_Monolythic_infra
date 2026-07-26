@@ -234,7 +234,7 @@ file_shares = {
 
     name = "sharedfiles"
 
-   storage_account_name = module.storage_account.storage_account_names["sa1"]
+    storage_account_name = "sohitstorage001"
 
     quota = 50
 
