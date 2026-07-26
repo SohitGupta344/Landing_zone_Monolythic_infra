@@ -150,12 +150,15 @@ stages:
     - task: PowerShell@2
       displayName: Infracost
       inputs:
-        targetType: inline
+        targetType: 'inline'
         script: |
           Set-Location "$(Build.SourcesDirectory)\env\dev"
-
+          
+          infracost auth login
+          
           infracost breakdown `
           --path . `
+          
           --format json `
           --out-file "$(Build.ArtifactStagingDirectory)\infracost.json"
 
@@ -265,4 +268,4 @@ stages:
         command: apply
         workingDirectory: $(System.DefaultWorkingDirectory)/env/dev
         environmentServiceNameAzureRM: ericsson
-        commandOptions: "$(Pipeline.Workspace)\tfplan\tfplan"
+        commandOptions: "$(Pipeline.Workspace)/tfplan/tfplan"
