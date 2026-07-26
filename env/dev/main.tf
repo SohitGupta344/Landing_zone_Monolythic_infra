@@ -513,6 +513,8 @@ module "private_dns_zone" {
 
   private_dns_zones = var.private_dns_zones
 
+  depends_on = [ module.resource_group ]
+
 }
 
 module "private_dns_zone_link" {
@@ -604,6 +606,14 @@ module "private_endpoint" {
     }
 
   }
+
+  depends_on = [
+  module.storage_account,
+  module.sql_server,
+  module.private_dns_zone,
+  module.subnet,
+  module.resource_group
+]
 
 }
 
