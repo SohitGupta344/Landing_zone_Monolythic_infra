@@ -12,5 +12,5 @@ stages:
           inputs:
             targetType: 'inline'
             script: |
-              cd  cd C:\agent\_work
-              cd env/dev
+              cd C:\agent\_work
+              cd  env/dev
