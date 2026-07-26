@@ -1,188 +1,268 @@
-
-pool: Default
 trigger:
--  main 
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  name: Default
+
 stages:
+
+#========================================================
+# PRE-COMMIT STAGE
+#========================================================
 - stage: PreCommit
-  displayName: Pre-Commit / Static Analysis Stage
-  pool: Default
-  jobs: 
+  displayName: "Pre-Commit / Static Analysis"
+
+  jobs:
+
   - job: TerraformValidate
-    displayName: Terraform Validate
+    displayName: "Terraform Validate"
+
     steps:
+
     - task: TerraformTask@5
+      displayName: Terraform Init
       inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/env/dev'
-        backendServiceArm: 'ericsson'
-        backendAzureRmResourceGroupName: 'sohit-rg'
-        backendAzureRmStorageAccountName: 'sohittfstate001'
-        backendAzureRmContainerName: 'tfstate'
-        backendAzureRmKey: 'sohit.terraform.tfstate'''
-        commandOptions: "-upgrade"
+        provider: azurerm
+        command: init
+        workingDirectory: $(System.DefaultWorkingDirectory)/env/dev
+        backendServiceArm: ericsson
+        backendAzureRmResourceGroupName: sohit-rg
+        backendAzureRmStorageAccountName: sohittfstate001
+        backendAzureRmContainerName: tfstate
+        backendAzureRmKey: sohit.terraform.tfstate
+        commandOptions: -upgrade
+
     - task: TerraformTask@5
-      displayName: validate
+      displayName: Terraform Validate
       inputs:
-        provider: 'azurerm'
-        command: 'validate'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/env/dev'
+        provider: azurerm
+        command: validate
+        workingDirectory: $(System.DefaultWorkingDirectory)/env/dev
+
+#========================================================
+
   - job: TerraformFmt
     dependsOn: TerraformValidate
-    displayName: Terraform Fmt
+    displayName: "Terraform Format"
+
     steps:
-    - task: TerraformTask@5
-      displayName: fmt
+
+    - task: PowerShell@2
+      displayName: Terraform fmt
       inputs:
-        provider: 'azurerm'
-        command: 'custom'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/env/dev'
-        outputTo: 'console'
-        customCommand: 'fmt'
-        environmentServiceNameAzureRM: 'ericsson'
-  - job: gitleaks
+        targetType: inline
+        script: |
+          Set-Location "$(Build.SourcesDirectory)\env\dev"
+          terraform fmt -recursive -check
+
+#========================================================
+
+  - job: Gitleaks
     dependsOn: TerraformFmt
-    displayName: gitleaks
+
     steps:
+
     - task: PowerShell@2
-      inputs:
-        targetType: 'inline'
-        script: |
-          Set-Location "$(Build.SourcesDirectory)\env\dev"
-          
-          gitleaks dir .
-          
-          gitleaks dir . --report-format json --report-path gitleaks-report.json
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'gitleaks-report.json'
-        publishLocation: 'Container'
-    
-  - job: tflint
-    dependsOn: gitleaks
-    displayName: TFLint
-    steps:
-    - task: PowerShell@2
+      displayName: Gitleaks Scan
       continueOnError: true
       inputs:
-        targetType: 'inline'
+        targetType: inline
         script: |
           Set-Location "$(Build.SourcesDirectory)\env\dev"
-          
-          tflint
-          
-          tflint --format compact > tflint.txt
+
+          gitleaks detect `
+          --source . `
+          --report-format json `
+          --report-path "$(Build.ArtifactStagingDirectory)\gitleaks-report.json"
 
     - task: PublishBuildArtifacts@1
-      displayName: tflint
       inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'tflint.txt'
-        publishLocation: 'Container'
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)\gitleaks-report.json"
+        ArtifactName: gitleaks-report
 
-  - job: tfsec
-    dependsOn: tflint
-    displayName: tfsec
+#========================================================
+
+  - job: TFLint
+    dependsOn: Gitleaks
+
     steps:
+
     - task: PowerShell@2
+      displayName: TFLint
       continueOnError: true
       inputs:
-        targetType: 'inline'
+        targetType: inline
         script: |
           Set-Location "$(Build.SourcesDirectory)\env\dev"
-          
-          tfsec .
-          
-          tfsec . --format json --out tfsec-report
+
+          tflint --init
+          tflint --recursive --format compact > "$(Build.ArtifactStagingDirectory)\tflint.txt"
 
     - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)\tflint.txt"
+        ArtifactName: tflint-report
+
+#========================================================
+
+  - job: TFSEC
+    dependsOn: TFLint
+
+    steps:
+
+    - task: PowerShell@2
       displayName: tfsec
+      continueOnError: true
       inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'tfsec-report'
-        publishLocation: 'Container'
+        targetType: inline
+        script: |
+          Set-Location "$(Build.SourcesDirectory)\env\dev"
 
+          tfsec . `
+          --format json `
+          --out "$(Build.ArtifactStagingDirectory)\tfsec-report.json"
 
-- stage: Infra_Cost
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)\tfsec-report.json"
+        ArtifactName: tfsec-report
+
+#========================================================
+# INFRACOST
+#========================================================
+
+- stage: InfraCost
   dependsOn: PreCommit
+
   jobs:
-    - job: 
-      steps:
-      - task: PowerShell@2
-        inputs:
-          targetType: 'inline'
-          script: |
-            Set-Location "$(Build.SourcesDirectory)\env\dev"
-            
-            infracost breakdown --path .
-            
-            infracost breakdown --path . --format json --out-file infracost.json
 
-      - task: PublishBuildArtifacts@1
-        displayName: infracost
-        inputs:
-          PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-          ArtifactName: 'infracost.json'
-          publishLocation: 'Container'
+  - job: Infracost
 
-- stage: plan
-  displayName: Plan & Review Stage
-  jobs: 
+    steps:
+
+    - task: PowerShell@2
+      displayName: Infracost
+      inputs:
+        targetType: inline
+        script: |
+          Set-Location "$(Build.SourcesDirectory)\env\dev"
+
+          infracost breakdown `
+          --path . `
+          --format json `
+          --out-file "$(Build.ArtifactStagingDirectory)\infracost.json"
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)\infracost.json"
+        ArtifactName: infracost
+
+#========================================================
+# PLAN
+#========================================================
+
+- stage: Plan
+  dependsOn: InfraCost
+
+  jobs:
+
   - job: TerraformPlan
-    displayName: Terraform Plan
-    pool: Default
-    steps: 
+
+    steps:
+
     - task: TerraformTask@5
+      displayName: Terraform Init
       inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/env/dev'
-        backendServiceArm: 'ericsson'
-        backendAzureRmStorageAccountName: 'sohittfstate001'
-        backendAzureRmContainerName: 'tfstate'
-        backendAzureRmKey: 'sohit.terraform.tfstate'
-        commandOptions: "-upgrade"
+        provider: azurerm
+        command: init
+        workingDirectory: $(System.DefaultWorkingDirectory)/env/dev
+        backendServiceArm: ericsson
+        backendAzureRmResourceGroupName: sohit-rg
+        backendAzureRmStorageAccountName: sohittfstate001
+        backendAzureRmContainerName: tfstate
+        backendAzureRmKey: sohit.terraform.tfstate
+        commandOptions: -upgrade
+
     - task: TerraformTask@5
-      displayName: plan
+      displayName: Terraform Plan
       inputs:
-        provider: 'azurerm'
-        command: 'plan'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/env/dev'
-        environmentServiceNameAzureRM: 'ericsson'
-- stage: approval
-  dependsOn: plan
-  displayName: Approval & Governance Stage
+        provider: azurerm
+        command: plan
+        workingDirectory: $(System.DefaultWorkingDirectory)/env/dev
+        environmentServiceNameAzureRM: ericsson
+        commandOptions: "-out=tfplan"
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: "$(Build.SourcesDirectory)\env\dev\tfplan"
+        ArtifactName: tfplan
+
+#========================================================
+# APPROVAL
+#========================================================
+
+- stage: Approval
+  dependsOn: Plan
+
   jobs:
+
   - job: ManualApproval
-    displayName: Manual Approval
+
     pool: server
-    steps: 
+
+    steps:
+
     - task: ManualValidation@1
       inputs:
-        notifyUsers: 'sohitg89@gmail.com'
-        approvers: 'sohitg89@gmail.com'
-- stage: apply
-  dependsOn: approval
-  displayName: Deploy / Apply Stage
+        notifyUsers: |
+          sohitg89@gmail.com
+        approvers: |
+          sohitg89@gmail.com
+
+#========================================================
+# APPLY
+#========================================================
+
+- stage: Apply
+  dependsOn: Approval
+
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'],'refs/heads/main'))
+
   jobs:
+
   - job: TerraformApply
-    displayName: Terraform Apply
-    pool: Default
+
     steps:
-    - task: TerraformTask@5
+
+    - task: DownloadBuildArtifacts@1
       inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/env/dev'
-        backendServiceArm: 'ericsson'
-        backendAzureRmStorageAccountName: 'sohittfstate001'
-        backendAzureRmContainerName: 'tfstate'
-        backendAzureRmKey: 'sohit.terraform.tfstate'
-        commandOptions: "-upgrade"
+        artifactName: tfplan
+        downloadPath: "$(Pipeline.Workspace)"
+
     - task: TerraformTask@5
+      displayName: Terraform Init
       inputs:
-        provider: 'azurerm'
-        command: 'apply'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/env/dev'
-        environmentServiceNameAzureRM: 'ericsson'
+        provider: azurerm
+        command: init
+        workingDirectory: $(System.DefaultWorkingDirectory)/env/dev
+        backendServiceArm: ericsson
+        backendAzureRmResourceGroupName: sohit-rg
+        backendAzureRmStorageAccountName: sohittfstate001
+        backendAzureRmContainerName: tfstate
+        backendAzureRmKey: sohit.terraform.tfstate
+
+    - task: TerraformTask@5
+      displayName: Terraform Apply
+      inputs:
+        provider: azurerm
+        command: apply
+        workingDirectory: $(System.DefaultWorkingDirectory)/env/dev
+        environmentServiceNameAzureRM: ericsson
+        commandOptions: "$(Pipeline.Workspace)\tfplan\tfplan"

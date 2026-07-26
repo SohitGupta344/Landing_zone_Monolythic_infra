@@ -220,7 +220,7 @@ storage_containers = {
 
     name = "tfstate"
 
-    storage_account_name = "sohitstorage001"
+    storage_account_id = ""
 
     container_access_type = "private"
 
@@ -234,7 +234,7 @@ file_shares = {
 
     name = "sharedfiles"
 
-    storage_account_name = "sohitstorage001"
+    storage_account_id = ""
 
     quota = 50
 

@@ -4,7 +4,7 @@ variable "storage_containers" {
 
     name                  = string
 
-    storage_account_name  = string
+    storage_account_id  = string
 
     container_access_type = string
 
