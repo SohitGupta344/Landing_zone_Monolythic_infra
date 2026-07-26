@@ -13,6 +13,7 @@ pool:
 
 variables:
   workingDirectory: '$(System.DefaultWorkingDirectory)/env/dev'
+  workingDirectory1: '$(System.DefaultWorkingDirectory)'
   backendRG: 'sohit-rg'
   backendStorage: 'sohittfstate001'
   backendContainer: 'tfstate'
@@ -99,7 +100,7 @@ stages:
 
         script: |
 
-          Set-Location "$(workingDirectory)"
+          Set-Location "$(workingDirectory1)"
 
           gitleaks detect `
           --source . `
@@ -129,7 +130,7 @@ stages:
 
         script: |
 
-          Set-Location "$(workingDirectory)"
+          Set-Location "$(workingDirectory1)"
 
           tflint --init
 
@@ -158,7 +159,7 @@ stages:
 
         script: |
 
-          Set-Location "$(workingDirectory)"
+          Set-Location "$(workingDirectory1)"
 
           tfsec . `
           --format json `
@@ -186,13 +187,12 @@ stages:
       displayName: Infracost
 
       inputs:
-
-        targetType: inline
-
+        targetType: 'inline'
         script: |
-
-          Set-Location "$(workingDirectory)"
-
+          Set-Location "$(workingDirectory1)"
+          
+          infracost auth login
+          
           infracost breakdown `
           --path . `
           --format json `
