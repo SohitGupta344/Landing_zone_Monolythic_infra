@@ -20,6 +20,7 @@ stages:
         backendAzureRmStorageAccountName: 'sohittfstate001'
         backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'sohit.terraform.tfstate'''
+        commandOptions: "-upgrade"
     - task: TerraformTask@5
       displayName: validate
       inputs:
@@ -95,6 +96,7 @@ stages:
         backendAzureRmStorageAccountName: 'sohittfstate001'
         backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'sohit.terraform.tfstate'
+        commandOptions: "-upgrade"
     - task: TerraformTask@5
       displayName: plan
       inputs:
@@ -131,6 +133,7 @@ stages:
         backendAzureRmStorageAccountName: 'sohittfstate001'
         backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'sohit.terraform.tfstate'
+        commandOptions: "-upgrade"
     - task: TerraformTask@5
       inputs:
         provider: 'azurerm'
