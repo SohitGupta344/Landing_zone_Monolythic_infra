@@ -1,0 +1,17 @@
+trigger:
+- main
+
+pool: default
+
+stages:
+  - stage: 
+    jobs:
+      - job: Scanning
+        steps:
+        - task: PowerShell@2
+          inputs:
+            targetType: 'inline'
+            script: |
+              # Write your PowerShell commands here.
+              
+              Write-Host "Hello World"
