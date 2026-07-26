@@ -197,11 +197,11 @@ stages:
         command: plan
         workingDirectory: $(System.DefaultWorkingDirectory)/env/dev
         environmentServiceNameAzureRM: ericsson
-        commandOptions: "-out=tfplan"
+        commandOptions: "-out=$(Build.ArtifactStagingDirectory)/tfplan"
 
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: "$(Build.SourcesDirectory)/env/dev/tfplan"
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)/tfplan"
         ArtifactName: tfplan
 
 #========================================================
