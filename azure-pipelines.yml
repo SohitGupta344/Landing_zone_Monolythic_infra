@@ -107,7 +107,7 @@ stages:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: "$(Build.ArtifactStagingDirectory)\tflint.txt"
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)/tflint.txt"
         ArtifactName: tflint-report
 
 #========================================================
@@ -131,7 +131,7 @@ stages:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: "$(Build.ArtifactStagingDirectory)\tfsec-report.json"
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)/tfsec-report.json"
         ArtifactName: tfsec-report
 
 #========================================================
