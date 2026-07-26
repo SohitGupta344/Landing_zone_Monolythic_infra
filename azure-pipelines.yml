@@ -4,14 +4,97 @@ trigger:
 pool: default
 
 stages:
-  - stage: 
+  - stage: Scanning
+    pool: Default
+    displayName: Scanning
     jobs:
-      - job: Scanning
+      - job: GitLeak_Scan
+        displayName: GitLeak_Scan
+        steps:
+        - task: PowerShell@2
+          displayName: GitLeak_Scan
+          inputs:
+            targetType: 'inline'
+            script: |
+              cd dev/dev
+              gitleaks dir .
+              gitleaks dir . --report-format json --report-path gitleaks-report.json
+
+      - job: tflint_Scan
+        displayName: tflint_Scan
+        steps:
+        - task: PowerShell@2
+          displayName: tflint_scan
+          inputs:
+            targetType: 'inline'
+            script: |
+              cd dev/dev
+              Tflint
+              (Get-Content .\tflint-report.json | ConvertFrom-Json).issues |
+              >> Select-Object message,@{N="File";E={$_.range.filename}},@{N="Line";E={$_.range.start.line}}
+
+      - job: tfsec_Scan
+        displayName: tfsec_Scan
+        steps:
+        - task: PowerShell@2
+          displayName: tfsec_scan
+          inputs:
+            targetType: 'inline'
+            script: |
+              cd dev/dev
+              tfsec .
+              tfsec . --format json --out tfsec-report
+
+      - job: infracst_Scan
+        displayName: infracost_Scan
+        steps:
+        - task: PowerShell@2
+          displayName: infracost_scan
+          inputs:
+            targetType: 'inline'
+            script: |
+              cd dev/dev
+              infracost breakdown --path .
+              (Get-Content .\infracost.json -Raw | ConvertFrom-Json).projects.breakdown.resources |
+              Select-Object name, hourlyCost, monthlyCost |
+              ConvertTo-Json -Depth 5 |
+              Set-Content .\resource-cost.json
+  - stage: Terraform_plan
+    pool: Default
+    displayName: Terraform_plan
+    jobs:
+      - job: Terraform_plan
+        displayName: Terraform_plan
         steps:
         - task: PowerShell@2
           inputs:
             targetType: 'inline'
             script: |
               cd env/dev
-              gitleaks dir .
-              gitleaks dir . --report-format json --report-path gitleaks-report.json
+              terraform init
+              terraform fmt
+              terraform validate
+              terraform plan
+  - stage: Manual_Approval
+    dependsOn: Terraform_plan
+    pool: server
+    jobs:
+      - job: 
+        steps:
+        - task: ManualValidation@1
+          inputs:
+            notifyUsers: 'sohitg89@gmail.com'
+            approvers: 'sohitg89@gmail.com'
+
+  - stage: Terraform_apply
+    jobs:
+      - job: 
+        steps:
+        - task: PowerShell@2
+          inputs:
+            targetType: 'inline'
+            script: |
+              cd env/dev
+              terraform init
+              terraform apply -auto-approve
+        
