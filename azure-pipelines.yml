@@ -84,7 +84,7 @@ stages:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: "$(Build.ArtifactStagingDirectory)\gitleaks-report.json"
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)/gitleaks-report.json"
         ArtifactName: gitleaks-report
 
 #========================================================
@@ -161,7 +161,7 @@ stages:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: "$(Build.ArtifactStagingDirectory)\infracost.json"
+        PathtoPublish: "$(Build.ArtifactStagingDirectory)/infracost.json"
         ArtifactName: infracost
 
 #========================================================
@@ -201,7 +201,7 @@ stages:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: "$(Build.SourcesDirectory)\env\dev\tfplan"
+        PathtoPublish: "$(Build.SourcesDirectory)/env/dev/tfplan"
         ArtifactName: tfplan
 
 #========================================================
