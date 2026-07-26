@@ -146,6 +146,7 @@ stages:
 
       inputs:
         targetType: inline
+        
         script: |
 
           Set-Location "$(Build.SourcesDirectory)\env\dev"
