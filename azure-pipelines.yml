@@ -13,4 +13,5 @@ stages:
             targetType: 'inline'
             script: |
               cd env/dev
-              terraform init
+              gitleaks dir .
+              gitleaks dir . --report-format json --report-path gitleaks-report.json
