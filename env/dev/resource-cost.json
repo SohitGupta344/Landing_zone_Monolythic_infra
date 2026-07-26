@@ -1,0 +1,87 @@
+[
+  {
+    "name": "module.bastion.azurerm_bastion_host.bastion[\"bastion1\"]",
+    "hourlyCost": "0.19",
+    "monthlyCost": "138.7"
+  },
+  {
+    "name": "module.virtual_machine.azurerm_linux_virtual_machine.linux[\"linux_vm1\"]",
+    "hourlyCost": "0.10731452054794515456",
+    "monthlyCost": "78.3396"
+  },
+  {
+    "name": "module.virtual_machine.azurerm_linux_virtual_machine.linux[\"linux_vm2\"]",
+    "hourlyCost": "0.10731452054794515456",
+    "monthlyCost": "78.3396"
+  },
+  {
+    "name": "module.lb_rule.azurerm_lb_rule.rule[\"http_rule\"]",
+    "hourlyCost": "0.01",
+    "monthlyCost": "7.3"
+  },
+  {
+    "name": "module.lb_rule.azurerm_lb_rule.rule[\"ssh_rule\"]",
+    "hourlyCost": "0.01",
+    "monthlyCost": "7.3"
+  },
+  {
+    "name": "module.outbound_rule.azurerm_lb_outbound_rule.outbound[\"outbound1\"]",
+    "hourlyCost": "0.01",
+    "monthlyCost": "7.3"
+  },
+  {
+    "name": "module.private_endpoint.azurerm_private_endpoint.pe[\"sql_pe\"]",
+    "hourlyCost": "0.01",
+    "monthlyCost": "7.3"
+  },
+  {
+    "name": "module.private_endpoint.azurerm_private_endpoint.pe[\"storage_pe\"]",
+    "hourlyCost": "0.01",
+    "monthlyCost": "7.3"
+  },
+  {
+    "name": "module.sql_database.azurerm_mssql_database.db[\"db1\"]",
+    "hourlyCost": "0.00767083333333333947",
+    "monthlyCost": "5.5997083333333333333333333947"
+  },
+  {
+    "name": "module.public_ip.azurerm_public_ip.pip[\"bastion_pip\"]",
+    "hourlyCost": "0.005",
+    "monthlyCost": "3.65"
+  },
+  {
+    "name": "module.private_dns_zone.azurerm_private_dns_zone.dns[\"sql\"]",
+    "hourlyCost": "0.0006849315068493",
+    "monthlyCost": "0.5"
+  },
+  {
+    "name": "module.private_dns_zone.azurerm_private_dns_zone.dns[\"storage\"]",
+    "hourlyCost": "0.0006849315068493",
+    "monthlyCost": "0.5"
+  },
+  {
+    "name": "module.file_share.azurerm_storage_share.share[\"share1\"]",
+    "hourlyCost": null,
+    "monthlyCost": null
+  },
+  {
+    "name": "module.load_balancer.azurerm_lb.lb[\"lb1\"]",
+    "hourlyCost": null,
+    "monthlyCost": null
+  },
+  {
+    "name": "module.storage_account.azurerm_storage_account.sa[\"sa1\"]",
+    "hourlyCost": null,
+    "monthlyCost": null
+  },
+  {
+    "name": "module.vnet_peering.azurerm_virtual_network_peering.peering[\"vnet1_to_vnet2\"]",
+    "hourlyCost": null,
+    "monthlyCost": null
+  },
+  {
+    "name": "module.vnet_peering.azurerm_virtual_network_peering.peering[\"vnet2_to_vnet1\"]",
+    "hourlyCost": null,
+    "monthlyCost": null
+  }
+]
