@@ -1,0 +1,65 @@
+1. Gitleaks
+
+gitleaks detect # agar git repo scan karni hai
+
+gitleaks dir .
+
+gitleaks dir . --report-format json --report-path gitleaks-report.json
+
+2. Tflint
+
+tflint
+tflint --format compact > tflint.txt
+tflint --recursive --format json > tflint-report.json
+tflint --recursive --format compact
+
+(Get-Content .\tflint-report.json | ConvertFrom-Json).issues |
+>> Select-Object message,@{N="File";E={$_.range.filename}},@{N="Line";E={$_.range.start.line}}
+
+
+3. tfsec
+
+tfsec .
+
+tfsec . --format json --out tfsec-report
+
+
+4. Infracost
+
+infracost --version 
+
+
+infracost auth login
+
+infracost breakdown --path .
+
+infracost breakdown --path . --format json --out-file infracost.json
+
+
+infracost output \
+  --path infracost.json \
+  --format html \
+  --out-file infracost.html
+
+
+infracost breakdown --path . --format table
+
+
+(Get-Content .\infracost.json -Raw | ConvertFrom-Json).projects.breakdown.resources |
+Select-Object name, monthlyCost
+
+(Get-Content .\infracost.json -Raw | ConvertFrom-Json).projects.breakdown.resources |
+Format-Table name, monthlyCost -AutoSize
+
+
+(Get-Content .\infracost.json -Raw | ConvertFrom-Json).projects.breakdown.resources |
+Select-Object name, costComponents
+
+(Get-Content .\infracost.json -Raw | ConvertFrom-Json) |
+ConvertTo-Json -Depth 100 |
+Set-Content .\infracost-pretty.json
+
+(Get-Content .\infracost.json -Raw | ConvertFrom-Json).projects.breakdown.resources |
+Select-Object name, hourlyCost, monthlyCost |
+ConvertTo-Json -Depth 5 |
+Set-Content .\resource-cost.json
